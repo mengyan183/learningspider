@@ -11,7 +11,7 @@ from pip import __main__
 ssl._create_default_https_context = ssl._create_unverified_context
 '''
  * 爬取静态页面(笔趣阁),并将文件保存到本地
- * @author guoxing
+ * @author xingguo
  * @date 2019-01-07 11:47 AM
  * @since 2.0.0
 '''

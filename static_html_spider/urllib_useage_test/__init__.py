@@ -1,11 +1,15 @@
 # -*- coding: UTF-8 -*-
+"""
+Copyright 2019 [xingguo] All rights Reserved.
+"""
 # 引入urllib
 from urllib import request
 # 引入requests
 import requests
 
 """
-   @author guoxing
+    urllib测试
+   @author xingguo
    @date 1/7/2019 4:11 PM 
    @since 1.0.0 
 """
