@@ -54,7 +54,6 @@ def urllib_youdao_translate_test(text):
        @author xingguo
        @date 1/7/2019 5:29 PM
        @since 1.0.0
-       TODO:当前请求有道翻译存在bug
     """
     # 定义headers
     headers = {}
@@ -63,23 +62,24 @@ def urllib_youdao_translate_test(text):
     headers['Referer'] = "http://fanyi.youdao.com/"
     # 有道翻译(英文转换为中文)
     youdao_translate_url = "http://fanyi.youdao.com/translate?smartresult=dict&smartresult=rule"
-    # 参数
+    # 参数,当前参数中只有i和doctype是必须的
     form_data = {"i": "test",
-                 "from": "AUTO",
-                 "to": "AUTO",
-                 "smartresult": "dict",
-                 "client": "fanyideskweb",
-                 "salt": 15468532947005,
-                 "sign": "c3866c1e9c0632421a1a7b390e875c22",
-                 "bv": "363eb5a1de8cfbadd0cd78bd6bd43bee",
-                 "doctype": "json",
-                 "version": 2.1,
-                 "keyfrom": "fanyi.web",
-                 "action": "FY_BY_CLICKBUTTION",
-                 "typoResult": "false"}
-    auto_data = {"ts": time.time()}
+                 # "from": "AUTO",
+                 # "to": "AUTO"，
+                 # "smartresult": "dict"，
+                 # "client": "fanyideskweb",
+                 # "salt": 15468532947005,
+                 # "sign": "c3866c1e9c0632421a1a7b390e875c22",
+                 # "bv": "363eb5a1de8cfbadd0cd78bd6bd43bee",
+                 "doctype": "json"
+                 # "version": 2.1,
+                 # "keyfrom": "fanyi.web",
+                 # "action": "FY_BY_CLICKBUTTION",
+                 # "typoResult": "false"
+    }
+    # auto_data = {"ts": time.time()}
     # 字典类型追加
-    form_data.update(auto_data)
+    # form_data.update(auto_data)
     form_data["i"] = text
     # 使用urlencode方法转换标准格式
     data = parse.urlencode(form_data).encode('utf-8')
