@@ -62,7 +62,7 @@ def urllib_youdao_translate_test(text):
     headers['User-Agent'] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36"
     headers['Referer'] = "http://fanyi.youdao.com/"
     # 有道翻译(英文转换为中文)
-    youdao_translate_url = "http://fanyi.youdao.com/translate_o?smartresult=dict&smartresult=rule"
+    youdao_translate_url = "http://fanyi.youdao.com/translate?smartresult=dict&smartresult=rule"
     # 参数
     form_data = {"i": "test",
                  "from": "AUTO",
@@ -78,16 +78,19 @@ def urllib_youdao_translate_test(text):
                  "action": "FY_BY_CLICKBUTTION",
                  "typoResult": "false"}
     auto_data = {"ts": time.time()}
+    # 字典类型追加
     form_data.update(auto_data)
     form_data["i"] = text
     # 使用urlencode方法转换标准格式
     data = parse.urlencode(form_data).encode('utf-8')
     # 包装request对象
-    request_request = request.Request(url=youdao_translate_url, headers=headers, data=data)
+    request_request = request.Request(url=youdao_translate_url, headers=headers,data=data)
     # 传递Request对象
     response = request.urlopen(request_request)
+    read = response.read()
+    detect = chardet.detect(read)
     # 读取信息并解码
-    html = response.read().decode('utf-8')
+    html = read.decode(detect["encoding"])
     # 使用JSON
     translate_results = json.loads(html)
     # 如果正常返回
