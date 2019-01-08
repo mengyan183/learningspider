@@ -80,4 +80,4 @@ def province_national_bureau_of_statistics_of_china():
         # 转换为6位标准格式areacode
         city_code = city_code.join("0", left_zero)
         area = Area(city_name, city_code, 0, child_url)
-        # TODO : 
+        # TODO :
