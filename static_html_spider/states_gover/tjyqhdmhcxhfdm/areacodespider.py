@@ -2,6 +2,7 @@
 """
 Copyright 2019 [xingguo] All rights Reserved.
 """
+import re
 from urllib import request
 
 import chardet
@@ -119,61 +120,78 @@ def list_child_area(area):
 
     # 创建request
     request_request = request.Request(url=url, headers=headers)
-    # 发送请求
-    response = request.urlopen(request_request)
-    # 解析响应
-    read = response.read()
-    detect = chardet.detect(read)
-    # 读取信息并解码
-    html = read.decode(detect["encoding"])
-    # 解析html
-    soup = BeautifulSoup(html, "html.parser")
-    # 获取所有 class="citytr" 的tr标签
-    # TODO
-    city_tr_list = soup.select("tr[class$='tr']")
-    for city_tr in city_tr_list:
-        city_tr_beautiful_soup = BeautifulSoup(str(city_tr), "html.parser")
-        # 获取所有的a标签
-        city_tr_td_a_list = city_tr_beautiful_soup.find_all("a")
-        # 如果当前标签下没有a标签,说明当前区域是最后一级
-        if city_tr_td_a_list is None:
-            city_tr_td_list = city_tr_beautiful_soup.find_all("td")
-            area_code = city_tr_td_list[0]
-            # 截取六位
-            area_code = str(area_code)[0, 6]
-            # 获取区域名称
-            area_name = city_tr_td_list[1]
-            child_url = None
-            a = Area(area_name, area_code, parent_code, child_url)
+    try:
+        # 发送请求
+        response = request.urlopen(request_request)
+        # 解析响应
+        read = response.read()
+        detect = chardet.detect(read)
+        # 读取信息并解码
+        html = read.decode(detect["encoding"],'ignore')
+        # 解析html
+        soup = BeautifulSoup(html, "html.parser")
+        # 获取所有 class="citytr" 的tr标签
+        city_tr_list = soup.select("tr[class$='tr']")
+        for city_tr in city_tr_list:
+            city_tr_beautiful_soup = BeautifulSoup(str(city_tr), "html.parser")
+            # 获取所有的a标签
+            city_tr_td_a_list = city_tr_beautiful_soup.find_all("a")
+
+            # 如果当前标签下没有a标签,说明当前区域是最后一级
+            if not city_tr_td_a_list or city_tr_td_a_list is None:
+                city_tr_td_list = city_tr_beautiful_soup.find_all("td")
+                area_code = city_tr_td_list[0].text
+                # 获取区域名称
+                area_name = city_tr_td_list[-1].text
+                child_url = None
+                a = Area(area_name, area_code, parent_code, child_url)
+                area_list.append(a)
+                break
+            else:
+                # 获取最后一个a标签
+                city_tr_td_a = city_tr_td_a_list[-1]
+                # a标签href属性值
+                a_href = city_tr_td_a.get("href")
+                # 获取区域名称
+                area_name = city_tr_td_a.text
+                # 解析href中的区域code
+                a_href_array = str(a_href).split("/")
+                href = a_href_array[-1]
+                pre_href = href[0:href.find(".html")]
+                # 写出正则表达式 任意2个字符
+                pattern = re.compile('.{2}')
+                result = ' '.join(pattern.findall(pre_href))
+                split_list = result.split(" ")
+                pre = ""
+                for i in range(len(split_list) - 1):
+                    pre += split_list[i]+"/"
+                index = str(href).find(".html")
+                area_code = str(href)[0:index]
+                length = len(area_code)
+                if length < 6:
+                    area_code += ((6 - length) * "0")
+                child_url = base_url + pre + href
+                a = Area(area_name, area_code, parent_code, child_url)
+            if city_tr_td_a_list is not None:
+                child_area_list = list_child_area(a)
+                if child_area_list is not None:
+                    area_list.extend(child_area_list)
             area_list.append(a)
-            break
-        else:
-            # 获取最后一个a标签
-            city_tr_td_a = city_tr_td_a_list[-1]
-            # a标签href属性值
-            a_href = city_tr_td_a.get("href")
-            # 获取区域名称
-            area_name = city_tr_td_a.text
-            # 解析href中的区域code
-            a_href_array = str(a_href).split("/")
-            href = a_href_array[-1]
-            index = str(href).find(".html")
-            area_code = str(href)[0:index]
-            area_code += ((6 - len(area_code)) * "0")
-            child_url = base_url + a_href
-            a = Area(area_name, area_code, parent_code, child_url)
-        if city_tr_td_a_list is not None:
-            child_area_list = list_child_area(a)
-            if child_area_list is not None:
-                area_list.extend(child_area_list)
-        area_list.append(a)
+    except EnvironmentError as e:
+        print(url)
+
     return area_list
 
 
 # 获取所有省级的子级数据
+total_china_area_list = []
 for province in province_list:
     if province is not None:
         child_area_list = list_child_area(province)
-        print(child_area_list.__dict__.values())
-# province = Area("东华门街道办事处", 110101001000, 0, "http://www.stats.gov.cn/tjsj/tjbz/tjyqhdmhcxhfdm/2017/11/01/01/110101001.html")
-# area = list_child_area(province)
+        if child_area_list is not None and child_area_list != []:
+            total_china_area_list.append(child_area_list)
+
+for area in total_china_area_list:
+    if area is not None and type(area) == Area:
+        print(area.__dict__.values())
+
