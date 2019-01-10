@@ -34,6 +34,17 @@ class Area:
         self.child_url = child_url
 
 
+# 中国国家统计局统计用区划代码和城乡划分代码请求地址
+base_url = "http://www.stats.gov.cn/tjsj/tjbz/tjyqhdmhcxhfdm/2017/"
+
+# headers
+headers = {}
+headers["Cookie"] = "AD_RS_COOKIE=20081945; _trs_uv=jqn5fkaf_6_feew; _trs_ua_s_1=jqnif7cc_6_5ipjs"
+headers[
+    "User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36"
+headers["Referer"] = "http://www.stats.gov.cn/tjsj/tjbz/tjyqhdmhcxhfdm/"
+
+
 def province_national_bureau_of_statistics_of_china():
     """
         爬取中国国家统计局区域划分代码
@@ -41,15 +52,7 @@ def province_national_bureau_of_statistics_of_china():
        @date 1/8/2019 4:47 PM
        @since 1.0.0
     """
-    # 中国国家统计局统计用区划代码和城乡划分代码请求地址
-    base_url = "http://www.stats.gov.cn/tjsj/tjbz/tjyqhdmhcxhfdm/2017/"
     url = base_url + "index.html"
-    # headers
-    headers = {}
-    headers["Cookie"] = "AD_RS_COOKIE=20081945; _trs_uv=jqn5fkaf_6_feew; _trs_ua_s_1=jqnif7cc_6_5ipjs"
-    headers[
-        "User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36"
-    headers["Referer"] = "http://www.stats.gov.cn/tjsj/tjbz/tjyqhdmhcxhfdm/"
 
     # 创建request
     request_request = request.Request(url=url, headers=headers)
@@ -68,16 +71,109 @@ def province_national_bureau_of_statistics_of_china():
     beautiful_soup_tr = BeautifulSoup(str(find_all_tr), "html.parser")
     # 所有a标签
     a_list = beautiful_soup_tr.find_all('a')
+    province_list = []
     # 解析所有a标签数据
     for city_a in a_list:
         # 获取省份名称
-        city_name = city_a.string
-        href = city_a.href
+        city_name = city_a.text
+        # 获取a标签的href属性
+        href = city_a.get("href")
         # 获取访问子级区域的url地址
-        child_url = base_url.join(href)
-        city_code = href.split(0, href.find(".html"))
+        child_url = base_url + str(href)
+        # 获取当前区域的code
+        city_code = str(href)[0:str(href).find(".html")]
         left_zero = 6 - len(city_code)
         # 转换为6位标准格式areacode
-        city_code = city_code.join("0", left_zero)
+        left_zeros = "0" * left_zero
+        city_code += left_zeros
         area = Area(city_name, city_code, 0, child_url)
-        # TODO :
+        # print(area.__dict__.values())
+        province_list.append(area)
+    return province_list
+
+
+# 获取所有省级区域数据
+province_list = province_national_bureau_of_statistics_of_china()
+
+
+def list_child_area(area):
+    """
+        :param area 父级区域数据
+        :returns 当前区域下的所有子级区域数据
+        采用递归的方法遍历区域数据,直到最终子集区域
+       @author xingguo
+       @date 1/10/2019 1:42 PM
+       @since 1.0.0
+    """
+    # 初始化区域字典(集合)
+    area_list = []
+    if area is None or type(area) is not Area:
+        return area_list
+    # 当前区域的code
+    parent_code = area.code
+    # 子区域请求地址
+    child_url = area.child_url
+    if child_url is None:
+        return area_list;
+    url = child_url
+
+    # 创建request
+    request_request = request.Request(url=url, headers=headers)
+    # 发送请求
+    response = request.urlopen(request_request)
+    # 解析响应
+    read = response.read()
+    detect = chardet.detect(read)
+    # 读取信息并解码
+    html = read.decode(detect["encoding"])
+    # 解析html
+    soup = BeautifulSoup(html, "html.parser")
+    # 获取所有 class="citytr" 的tr标签
+    # TODO
+    city_tr_list = soup.select("tr[class$='tr']")
+    for city_tr in city_tr_list:
+        city_tr_beautiful_soup = BeautifulSoup(str(city_tr), "html.parser")
+        # 获取所有的a标签
+        city_tr_td_a_list = city_tr_beautiful_soup.find_all("a")
+        # 如果当前标签下没有a标签,说明当前区域是最后一级
+        if city_tr_td_a_list is None:
+            city_tr_td_list = city_tr_beautiful_soup.find_all("td")
+            area_code = city_tr_td_list[0]
+            # 截取六位
+            area_code = str(area_code)[0, 6]
+            # 获取区域名称
+            area_name = city_tr_td_list[1]
+            child_url = None
+            a = Area(area_name, area_code, parent_code, child_url)
+            area_list.append(a)
+            break
+        else:
+            # 获取最后一个a标签
+            city_tr_td_a = city_tr_td_a_list[-1]
+            # a标签href属性值
+            a_href = city_tr_td_a.get("href")
+            # 获取区域名称
+            area_name = city_tr_td_a.text
+            # 解析href中的区域code
+            a_href_array = str(a_href).split("/")
+            href = a_href_array[-1]
+            index = str(href).find(".html")
+            area_code = str(href)[0:index]
+            area_code += ((6 - len(area_code)) * "0")
+            child_url = base_url + a_href
+            a = Area(area_name, area_code, parent_code, child_url)
+        if city_tr_td_a_list is not None:
+            child_area_list = list_child_area(a)
+            if child_area_list is not None:
+                area_list.extend(child_area_list)
+        area_list.append(a)
+    return area_list
+
+
+# 获取所有省级的子级数据
+for province in province_list:
+    if province is not None:
+        child_area_list = list_child_area(province)
+        print(child_area_list.__dict__.values())
+# province = Area("东华门街道办事处", 110101001000, 0, "http://www.stats.gov.cn/tjsj/tjbz/tjyqhdmhcxhfdm/2017/11/01/01/110101001.html")
+# area = list_child_area(province)
