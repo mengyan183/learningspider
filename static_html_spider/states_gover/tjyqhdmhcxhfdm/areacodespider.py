@@ -3,6 +3,8 @@
 Copyright 2019 [xingguo] All rights Reserved.
 """
 import re
+import time
+from enum import Enum
 from urllib import request
 
 import chardet
@@ -16,6 +18,26 @@ from bs4 import BeautifulSoup
 """
 
 
+class AreaLevel(Enum):
+    """
+        中国国家行政区域级别划分
+       @author xingguo
+       @date 1/11/2019 11:04 AM
+       @since 1.0.0
+    """
+    # 国家
+    NATION = 0
+    # 省级行政区
+    PROVINCIAL = 1
+    # 地级行政区
+    PREFECTURE = 2
+    # 县级行政区
+    COUNTRY = 3
+    # 乡级行政区
+    TOWNSHIP = 4
+    # 村级行政区
+    VILLAGE = 5
+
 class Area:
     """
     区域(省份/市区/县/乡)
@@ -24,7 +46,7 @@ class Area:
    @since 1.0.0
     """
 
-    def __init__(self, name, code, parent_code, child_url):
+    def __init__(self, name, code, parent_code, child_url, level):
         # 名称
         self.name = name
         # 区域code
@@ -33,7 +55,8 @@ class Area:
         self.parent_code = parent_code
         # 子区域访问URL
         self.child_url = child_url
-
+        # 级别(0:全国,1:省级行政区,2:地级行政区,3:县级行政区,4:乡级行政区,5:村级行政区) https://zh.wikipedia.org/wiki/中华人民共和国行政区划
+        self.level = level
 
 # 中国国家统计局统计用区划代码和城乡划分代码请求地址
 base_url = "http://www.stats.gov.cn/tjsj/tjbz/tjyqhdmhcxhfdm/2017/"
@@ -87,7 +110,7 @@ def province_national_bureau_of_statistics_of_china():
         # 转换为6位标准格式areacode
         left_zeros = "0" * left_zero
         city_code += left_zeros
-        area = Area(city_name, city_code, 0, child_url)
+        area = Area(city_name, city_code, 0, child_url, AreaLevel.PROVINCIAL.value)
         # print(area.__dict__.values())
         province_list.append(area)
     return province_list
@@ -108,6 +131,7 @@ def list_child_area(area):
     """
     # 初始化区域字典(集合)
     area_list = []
+    # 判断当前类型是否为area类型
     if area is None or type(area) is not Area:
         return area_list
     # 当前区域的code
@@ -115,8 +139,9 @@ def list_child_area(area):
     # 子区域请求地址
     child_url = area.child_url
     if child_url is None:
-        return area_list;
+        return area_list
     url = child_url
+    level = area.level
 
     # 创建request
     request_request = request.Request(url=url, headers=headers)
@@ -136,15 +161,17 @@ def list_child_area(area):
             city_tr_beautiful_soup = BeautifulSoup(str(city_tr), "html.parser")
             # 获取所有的a标签
             city_tr_td_a_list = city_tr_beautiful_soup.find_all("a")
-
             # 如果当前标签下没有a标签,说明当前区域是最后一级
             if not city_tr_td_a_list or city_tr_td_a_list is None:
+                # 查找td标签
                 city_tr_td_list = city_tr_beautiful_soup.find_all("td")
+                # 获取区域code
                 area_code = city_tr_td_list[0].text
                 # 获取区域名称
                 area_name = city_tr_td_list[-1].text
                 child_url = None
-                a = Area(area_name, area_code, parent_code, child_url)
+                a = Area(area_name, area_code, parent_code, child_url, int(level) + 1)
+                print(a.__dict__.values())
                 area_list.append(a)
                 break
             else:
@@ -160,25 +187,32 @@ def list_child_area(area):
                 pre_href = href[0:href.find(".html")]
                 # 写出正则表达式 任意2个字符
                 pattern = re.compile('.{2}')
+                # 将文本数字每两位中间添加一个空格
                 result = ' '.join(pattern.findall(pre_href))
                 split_list = result.split(" ")
+                # 完整网址前缀
                 pre = ""
                 for i in range(len(split_list) - 1):
                     pre += split_list[i]+"/"
                 index = str(href).find(".html")
+                # 获取area_code
                 area_code = str(href)[0:index]
+                # 由于县级以上area_code都是6位一下(包含6位),将所有县级以上area_code拼接为6位
                 length = len(area_code)
                 if length < 6:
                     area_code += ((6 - length) * "0")
+                # 获取子级区域请求地址
                 child_url = base_url + pre + href
-                a = Area(area_name, area_code, parent_code, child_url)
+                a = Area(area_name, area_code, parent_code, child_url, int(level) + 1)
+                print(a.__dict__.values())
             if city_tr_td_a_list is not None:
                 child_area_list = list_child_area(a)
-                if child_area_list is not None:
+                if child_area_list is not None and child_area_list != []:
                     area_list.extend(child_area_list)
             area_list.append(a)
     except EnvironmentError as e:
         print(url)
+        print(e)
 
     return area_list
 
@@ -187,10 +221,14 @@ def list_child_area(area):
 total_china_area_list = []
 for province in province_list:
     if province is not None:
+        start_time = time.time()
         child_area_list = list_child_area(province)
         if child_area_list is not None and child_area_list != []:
             total_china_area_list.append(child_area_list)
-
+        print(province.__dict__.values())
+        print("花费时间:" + str(time.time() - start_time) + " s;")
+        time.sleep(100)
+print("所有行政区域数量为:" + len(total_china_area_list))
 for area in total_china_area_list:
     if area is not None and type(area) == Area:
         print(area.__dict__.values())
