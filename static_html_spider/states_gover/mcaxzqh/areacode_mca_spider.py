@@ -6,8 +6,9 @@ from enum import Enum
 from urllib import request
 
 import chardet
+import mysql.connector
 from bs4 import BeautifulSoup
-
+import pymysql
 """
     中国民政部县以上(包含县)区划代码爬取
    @author xingguo
@@ -92,7 +93,16 @@ over_country_area_list = mca_area_code_spider()
 print(len(over_country_area_list))
 
 # 订正数据,对数据进行分级处理; 县和县以上数据area_code全为6位纯数字;省级行政区XX0000格式,地级行政区XXXX00格式,县级行政区XXXXXX格式
-fix_area_code = []
+fix_area_code_list = []
+# 元组数据
+tuple_fix_area_code_list = []
+# 创建sql连接
+my_local_db =pymysql.connect( host="sqlhost",
+                         port=port,
+                         user="user",
+                         passwd="password",
+                         database="dbname",charset="utf8")
+
 # TODO:对于直辖市缺少市辖区数据
 for area in over_country_area_list:
     code = area.code
@@ -109,4 +119,27 @@ for area in over_country_area_list:
         area.level = AreaLevel.COUNTRY.value
         area.parent_code = str(code)[:4] + "00"
     print(area.__dict__.values().__str__())
-    fix_area_code.append(area)
+    tuple_fix_area_code_list.append(tuple(area.__dict__.values()))
+    fix_area_code_list.append(area)
+
+# 将数据保存到数据库
+my_cursor = my_local_db.cursor()
+my_cursor.execute("DROP TABLE IF EXISTS `area`;")
+# 建表语句
+create_table_sql = '''CREATE TABLE `area` (
+    `area_id` int(5) unsigned NOT NULL AUTO_INCREMENT COMMENT '区域id',
+    `area_name` varchar(255) NOT NULL DEFAULT '' COMMENT '区域名称',
+    `area_code` int(12) unsigned zerofill NOT NULL DEFAULT '000000000000' COMMENT '区域代码',
+    `parent_code` int(12) unsigned zerofill NOT NULL DEFAULT '000000000000' COMMENT '父级区域代码',
+    `level` tinyint(1) unsigned zerofill NOT NULL DEFAULT '0' COMMENT '级别(0:全国,1:省级行政区,2:地级行政区,3:县级行政区,4:乡级行政区,5:村级行政区)',
+    `use_status` tinyint(1) unsigned zerofill NOT NULL DEFAULT '0' COMMENT '启用禁用状态;0:启用,1:禁用',
+    `del_flag` tinyint(1) unsigned zerofill NOT NULL DEFAULT '0' COMMENT '删除状态;0:未删除,1:已删除',
+    PRIMARY KEY (`area_id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='国家行政区域表';'''
+my_cursor.execute(create_table_sql)
+# 数据插入语句
+sql = "INSERT INTO `area` (`area_name`, `area_code`, `parent_code`, `level`) VALUES (%s, %s, %s, %s)"
+val = tuple_fix_area_code_list
+print(val)
+my_cursor.executemany(sql, val)
+my_local_db.commit()
