@@ -2,4 +2,4 @@
 # http://curl.haxx.se/rfc/cookie_spec.html
 # This is a generated file!  Do not edit.
 
-sso.test.tthunbohui.com	FALSE	/	FALSE		JSESSIONID	697E68E30A3E3ED7C107142E06046A76
+sso.test.tthunbohui.com	FALSE	/	FALSE		JSESSIONID	CA0E043A39C4116435D79C7EE84F237B

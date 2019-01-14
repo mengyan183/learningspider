@@ -18,14 +18,18 @@ class CasLoginParam():
        @since 1.0.0
     """
 
-    def __init__(self, user_name, password, execution, event_id, lt):
+    def __init__(self, username, password, execution, _eventId, lt, submit, vcode):
         # 用户名称
-        self.user_name = user_name
+        self.username = username
         # 密码(md5加密)
         self.password = password
         # cas execution
         self.execution = execution
         # cas event_id
-        self.event_id = event_id
+        self._eventId = _eventId
         # cas lt
         self.lt = lt
+        # cas submit
+        self.submit = submit
+        # vcode
+        self.vcode = vcode

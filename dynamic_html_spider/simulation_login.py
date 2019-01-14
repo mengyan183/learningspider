@@ -85,10 +85,13 @@ def load_cookie_text(cookie_text_path, url):
 
 
 url = "http://sso.test.tthunbohui.com/login"
-get_cookie(url)
-store_cookie_local(url)
-load_cookie_text("cookie.txt", url)
+# get_cookie(url)
+# store_cookie_local(url)
+# load_cookie_text("cookie.txt", url)
 
+headers = {}
+headers[
+    "User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36"
 
 def list_cas_arg(login_url):
     """
@@ -108,17 +111,21 @@ def list_cas_arg(login_url):
     lt_tag = soup.find("input", {"name": "lt"})
     execution_tag = soup.find("input", {"name": 'execution'})
     event_id_tag = soup.find("input", {"name": '_eventId'})
-    if lt_tag is not None and execution_tag is not None and event_id_tag is not None:
+    submit_tag = soup.find("button", {"name": 'submit'})
+    if lt_tag is not None and execution_tag is not None and event_id_tag is not None and submit_tag is not None:
         execution = execution_tag.get("value")
         event_id = event_id_tag.get("value")
         lt = lt_tag.get("value")
+        submit = submit_tag.get("value")
         print(str(lt))
         print(str(execution))
         print(str(event_id))
-        cas_login_param = CasLoginParam(None, None, None, None, None)
+        print(str(submit))
+        cas_login_param = CasLoginParam(None, None, None, None, None, None,1)
         cas_login_param.lt = lt
-        cas_login_param.event_id = event_id
+        cas_login_param._eventId = event_id
         cas_login_param.execution = execution
+        cas_login_param.submit = submit
         return cas_login_param
 
 
@@ -132,8 +139,9 @@ def computeMD5hash(my_string):
 def send_login_post(login_url, cas_login_param):
     # 使用urlencode方法转换标准格式
     post_data = parse.urlencode(cas_login_param.__dict__).encode('utf-8')
+    print(str(post_data))
     # 提交参数发送登录请求
-    request_request = request.Request(url=login_url, data=post_data)
+    request_request = request.Request(url=login_url, data=post_data, headers=headers)
     response = request.urlopen(request_request)
     read = response.read()
     detect = chardet.detect(read)
@@ -160,7 +168,7 @@ def simulation_cas_login(login_url, text_path):
     """
     # 获取登录所需参数
     cas_login_param = list_cas_arg(login_url)
-    cas_login_param.user_name = "18000000000"
+    cas_login_param.username = "18000000000"
     cas_login_param.password = computeMD5hash("123456")
     # 发送登录请求
     send_login_post(login_url, cas_login_param)
