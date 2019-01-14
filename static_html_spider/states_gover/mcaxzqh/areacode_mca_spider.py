@@ -17,8 +17,8 @@ import pymysql
 """
 
 # headers
-headers = {}
-headers["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36"
+# headers = {}
+# headers["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36"
 
 
 class AreaLevel(Enum):
@@ -64,23 +64,23 @@ class Area:
 def mca_area_code_spider():
     """
         民政部行政区域爬取
-        TODO:
        @author xingguo
        @date 1/11/2019 11:52 AM
        @since 1.0.0
     """
     area_list = []
     url = "http://www.mca.gov.cn/article/sj/xzqh/2018/201804-12/20181101021046.html"
-    #这是代理IP, https://www.xicidaili.com/
-    proxy = {'http':'111.181.70.143:9999'}
-    #创建ProxyHandler
-    proxy_support = request.ProxyHandler(proxy)
-    #创建Opener
-    opener = request.build_opener(proxy_support)
-    #添加User Angent
-    opener.addheaders = [headers]
-    #安装OPener
-    request.install_opener(opener)
+    # TODO : 代理不生效
+    # #这是代理IP, https://www.xicidaili.com/
+    # proxy = {'http':'111.181.70.143:9999'}
+    # #创建ProxyHandler
+    # proxy_support = request.ProxyHandler(proxy)
+    # #创建Opener
+    # opener = request.build_opener(proxy_support)
+    # #添加User Angent
+    # opener.addheaders = [headers]
+    # #安装OPener
+    # request.install_opener(opener)
 
     response = request.urlopen(url)
     # 解析响应
@@ -112,11 +112,12 @@ fix_area_code_list = []
 # 元组数据
 tuple_fix_area_code_list = []
 # 创建sql连接
-my_local_db =pymysql.connect( host="sqlhost",
-                         port=port,
-                         user="user",
-                         passwd="password",
-                         database="dbname",charset="utf8")
+# TODO:请修改sql连接方式
+my_local_db =pymysql.connect( host="test.dmp.mysqlm.jhops.club",
+                         port=3309,
+                         user="root",
+                         passwd="",
+                         database="dmp_base",charset="utf8")
 
 # TODO:对于直辖市缺少市辖区数据
 for area in over_country_area_list:
@@ -133,6 +134,8 @@ for area in over_country_area_list:
         # 县级行政区
         area.level = AreaLevel.COUNTRY.value
         area.parent_code = str(code)[:4] + "00"
+        if code == "110101":
+            print("查询"+str(area.name)+str(area.parent_code))
     print(area.__dict__.values().__str__())
     # tuple 将序列转换为元组
     tuple_fix_area_code_list.append(tuple(area.__dict__.values()))
