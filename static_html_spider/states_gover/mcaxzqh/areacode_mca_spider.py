@@ -134,8 +134,6 @@ for area in over_country_area_list:
         # 县级行政区
         area.level = AreaLevel.COUNTRY.value
         area.parent_code = str(code)[:4] + "00"
-        if code == "110101":
-            print("查询"+str(area.name)+str(area.parent_code))
     print(area.__dict__.values().__str__())
     # tuple 将序列转换为元组
     tuple_fix_area_code_list.append(tuple(area.__dict__.values()))
