@@ -40,6 +40,7 @@ def get_cookie(url):
     #     print('Value = %s' % cookie.value)
     return cookie_list
 
+
 def store_cookie_local(url):
     """
         将cookie存储到本地
@@ -96,6 +97,7 @@ headers = {
                   'like Gecko) Chrome/70.0.3538.77 Safari/537.36',
 }
 
+
 def list_cas_arg(login_url):
     """
         获取lt/execution/_eventId参数
@@ -124,7 +126,7 @@ def list_cas_arg(login_url):
         # print(str(execution))
         # print(str(event_id))
         # print(str(submit))
-        cas_login_param = CasLoginParam(None, None, None, None, None, None,1)
+        cas_login_param = CasLoginParam(None, None, None, None, None, None, 1)
         cas_login_param.lt = lt
         cas_login_param._eventId = event_id
         cas_login_param.execution = execution
@@ -183,6 +185,7 @@ def send_logout():
     logout_url = "http://sso.test.tthunbohui.com/logout"
     request.urlopen(logout_url)
 
+
 def simulation_cas_login(login_url, text_path):
     """
        模拟cas-server 4.0.0登录
@@ -194,6 +197,8 @@ def simulation_cas_login(login_url, text_path):
        2: 使用登录账号和密码登录和上述参数组装提交数据
          username=18000000000&password=e10adc3949ba59abbe56e057f20f883e&vcode=1&lt=LT-1343-qe26ccbvVDvgnzUBdYP62PDZCRwvkh-cas01.example.org&execution=e1s1&_eventId=submit&submit=%E7%99%BB%E5%BD%95
         3: 调用登录地址发送post请求提交参数
+       4：获取tgc后根据tgc 获取st，请求地址为 请求地址 ；tgcvalue
+       5：获取st后换取session数据
        @author xingguo
        @date 1/11/2019 9:04 PM
        @since 1.0.0
@@ -206,10 +211,9 @@ def simulation_cas_login(login_url, text_path):
     cas_login_param.password = computeMD5hash("123456")
     # 获取jsessionid
     cookie = get_jsessionid(url)
-    if cookie is not None and str(type(cookie)) == "<class 'http.cookiejar.Cookie'>":
+    if cookie is not None and str(type(cookie)) == "<class 'http.cookiejar.Cookie'>" and str(cookie.name) == "CASTGC":
         # 发送登录请求
         send_login_post(login_url + ";" + str(cookie.name) + "=" + str(cookie.value), cas_login_param)
-
 
 
 simulation_cas_login(url, "cookie.text")
