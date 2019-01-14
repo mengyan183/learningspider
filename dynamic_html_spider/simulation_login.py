@@ -38,7 +38,7 @@ def get_cookie(url):
     # for cookie in cookie_list:
     #     print('Name = %s' % cookie.name)
     #     print('Value = %s' % cookie.value)
-
+    return cookie_list
 
 def store_cookie_local(url):
     """
@@ -89,9 +89,12 @@ url = "http://sso.test.tthunbohui.com/login"
 # store_cookie_local(url)
 # load_cookie_text("cookie.txt", url)
 
-headers = {}
-headers[
-    "User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36"
+headers = {
+    "Cache-Control": 'max-age=0',
+    "Content-Type": 'application/x-www-form-urlencoded',
+    "User-Agent": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, '
+                  'like Gecko) Chrome/70.0.3538.77 Safari/537.36',
+}
 
 def list_cas_arg(login_url):
     """
@@ -117,16 +120,30 @@ def list_cas_arg(login_url):
         event_id = event_id_tag.get("value")
         lt = lt_tag.get("value")
         submit = submit_tag.get("value")
-        print(str(lt))
-        print(str(execution))
-        print(str(event_id))
-        print(str(submit))
+        # print(str(lt))
+        # print(str(execution))
+        # print(str(event_id))
+        # print(str(submit))
         cas_login_param = CasLoginParam(None, None, None, None, None, None,1)
         cas_login_param.lt = lt
         cas_login_param._eventId = event_id
         cas_login_param.execution = execution
         cas_login_param.submit = submit
         return cas_login_param
+
+
+def get_jsessionid(url):
+    """
+        获取jsessionid cookie
+       @author xingguo
+       @date 1/14/2019 4:29 PM
+       @since 1.0.0
+    """
+    cookie_list = get_cookie(url)
+    for cookie in cookie_list:
+        cookie_name = cookie.name
+        if cookie_name is not None and cookie_name == "JSESSIONID":
+            return cookie
 
 
 def computeMD5hash(my_string):
@@ -139,17 +156,32 @@ def computeMD5hash(my_string):
 def send_login_post(login_url, cas_login_param):
     # 使用urlencode方法转换标准格式
     post_data = parse.urlencode(cas_login_param.__dict__).encode('utf-8')
-    print(str(post_data))
     # 提交参数发送登录请求
-    request_request = request.Request(url=login_url, data=post_data, headers=headers)
+    headers["Cookie"] = "OUTFOX_SEARCH_USER_ID_NCOO=2139139465.580414"
+    request_request = request.Request(url=login_url, data=post_data,
+                                      headers=headers)
     response = request.urlopen(request_request)
+    re_header_list = response.getheaders()
+    print(tuple(re_header_list))
+    code = response.getcode()
+    print("响应状态码:" + str(code))
     read = response.read()
     detect = chardet.detect(read)
     # 读取信息并解码
     html = read.decode(detect["encoding"], "ignore")
     # TODO: 登录失败
-    print(str(html))
+    # print(str(html))
 
+
+def send_logout():
+    """
+       登出
+       @author xingguo
+       @date 1/14/2019 1:49 PM
+       @since 1.0.0
+    """
+    logout_url = "http://sso.test.tthunbohui.com/logout"
+    request.urlopen(logout_url)
 
 def simulation_cas_login(login_url, text_path):
     """
@@ -166,12 +198,18 @@ def simulation_cas_login(login_url, text_path):
        @date 1/11/2019 9:04 PM
        @since 1.0.0
     """
+    # 登出
+    send_logout()
     # 获取登录所需参数
     cas_login_param = list_cas_arg(login_url)
     cas_login_param.username = "18000000000"
     cas_login_param.password = computeMD5hash("123456")
-    # 发送登录请求
-    send_login_post(login_url, cas_login_param)
+    # 获取jsessionid
+    cookie = get_jsessionid(url)
+    if cookie is not None and str(type(cookie)) == "<class 'http.cookiejar.Cookie'>":
+        # 发送登录请求
+        send_login_post(login_url + ";" + str(cookie.name) + "=" + str(cookie.value), cas_login_param)
+
 
 
 simulation_cas_login(url, "cookie.text")
