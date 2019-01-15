@@ -7,6 +7,7 @@ from http import cookiejar
 from urllib import request, parse
 
 import chardet
+import requests
 from bs4 import BeautifulSoup
 
 from dynamic_html_spider.cas_login_param import CasLoginParam
@@ -105,12 +106,16 @@ def list_cas_arg(login_url):
        @date 1/11/2019 9:30 PM
        @since 1.0.0
     """
-    response = request.urlopen(login_url)
+    response = requests.get(login_url)
     # 解析响应
     read = response.read()
     detect = chardet.detect(read)
     # 读取信息并解码
     html = read.decode(detect["encoding"], "ignore")
+    # 获取jsessionId
+    cookies = response.cookies
+    cookies_jsessionid_value = cookies["JSESSIONID"]
+    print(str(cookies_jsessionid_value))
     # 解析html
     soup = BeautifulSoup(html, "html.parser")
     lt_tag = soup.find("input", {"name": "lt"})
@@ -131,7 +136,7 @@ def list_cas_arg(login_url):
         cas_login_param._eventId = event_id
         cas_login_param.execution = execution
         cas_login_param.submit = submit
-        return cas_login_param
+        return cas_login_param, cookies_jsessionid_value
 
 
 def get_jsessionid(url):
@@ -156,24 +161,31 @@ def computeMD5hash(my_string):
 
 
 def send_login_post(login_url, cas_login_param):
+
     # 使用urlencode方法转换标准格式
     post_data = parse.urlencode(cas_login_param.__dict__).encode('utf-8')
     # 提交参数发送登录请求
     headers["Cookie"] = "OUTFOX_SEARCH_USER_ID_NCOO=2139139465.580414"
-    request_request = request.Request(url=login_url, data=post_data,
-                                      headers=headers)
-    response = request.urlopen(request_request)
-    re_header_list = response.getheaders()
-    print(tuple(re_header_list))
-    code = response.getcode()
-    print("响应状态码:" + str(code))
-    read = response.read()
-    detect = chardet.detect(read)
-    # 读取信息并解码
-    html = read.decode(detect["encoding"], "ignore")
+    # request_request = request.Request(url=login_url, data=post_data, headers=headers)
+    # read = request_request.read()
+    # detect = chardet.detect(read)
+    # # 读取信息并解码
+    # html = read.decode(detect["encoding"], "ignore")
     # TODO: 登录失败
     # print(str(html))
-
+    # 使用requests发送请求
+    response = requests.post(url=login_url, data=post_data, headers=headers)
+    response_headers = response.headers
+    if response_headers is not None:
+        for key in response_headers:
+            value = response_headers[str(key)]
+            if value is not None:
+                print(str(key) + ":" + str(value))
+    cookies = response.cookies
+    if cookies is not None:
+        for cookie in cookies:
+            print(type(cookie))
+            print(cookie.__dict__.values())
 
 def send_logout():
     """
@@ -196,8 +208,8 @@ def simulation_cas_login(login_url, text_path):
          三个标签的value值存储
        2: 使用登录账号和密码登录和上述参数组装提交数据
          username=18000000000&password=e10adc3949ba59abbe56e057f20f883e&vcode=1&lt=LT-1343-qe26ccbvVDvgnzUBdYP62PDZCRwvkh-cas01.example.org&execution=e1s1&_eventId=submit&submit=%E7%99%BB%E5%BD%95
-        3: 调用登录地址发送post请求提交参数
-       4：获取tgc后根据tgc 获取st，请求地址为 请求地址 ；tgcvalue
+        3: 获取jsessionid，并重新组装请求登陆地址 +；jsessionid= 调用登录地址发送post请求提交参数
+       4：从返回headers中找到location获取st，并发送get请求
        5：获取st后换取session数据
        @author xingguo
        @date 1/11/2019 9:04 PM
@@ -206,14 +218,11 @@ def simulation_cas_login(login_url, text_path):
     # 登出
     send_logout()
     # 获取登录所需参数
-    cas_login_param = list_cas_arg(login_url)
+    cas_login_param, jsessionid = list_cas_arg(login_url)
     cas_login_param.username = "18000000000"
     cas_login_param.password = computeMD5hash("123456")
-    # 获取jsessionid
-    cookie = get_jsessionid(url)
-    if cookie is not None and str(type(cookie)) == "<class 'http.cookiejar.Cookie'>" and str(cookie.name) == "CASTGC":
-        # 发送登录请求
-        send_login_post(login_url + ";" + str(cookie.name) + "=" + str(cookie.value), cas_login_param)
+    # 发送登录请求
+    send_login_post(login_url + ";jsessionid=" + str(jsessionid), cas_login_param)
 
 
 simulation_cas_login(url, "cookie.text")
