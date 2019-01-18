@@ -1,0 +1,3 @@
+service FirstThriftService{
+    void sayHello(),
+}
