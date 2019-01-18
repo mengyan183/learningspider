@@ -51,12 +51,16 @@ def open_browser(url):
     # 配置chromedriver路径
     # https://sites.google.com/a/chromium.org/chromedriver/downloads , 下载运行系统指定的文件到当前文件所在目录下
     # 获取chromediver相对路径
+    argument = 'user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,like Gecko) Chrome/70.0.3538.77 Safari/537.36"'
+    open_browser(url=url, argument=argument)
+
+
+def open_browser(url, argument):
     path = get_path()
     if path is not None and path != "":
         options = webdriver.ChromeOptions()
         # 添加useragent
-        options.add_argument(
-            'user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,like Gecko) Chrome/70.0.3538.77 Safari/537.36"')
+        options.add_argument(argument)
         chrome = webdriver.Chrome(path)
         chrome.get(url)
         return chrome
