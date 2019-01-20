@@ -7,7 +7,7 @@ from thrift.protocol import TBinaryProtocol
 from thrift.transport import TSocket
 from thrift.transport import TTransport
 
-from first_thrift_test.example import Example
+from thrift_test.first_thrift_test.example import Example
 
 """
    @author xingguo
