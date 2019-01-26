@@ -22,7 +22,9 @@ def run():
     with grpc.insecure_channel('localhost:50051') as channel:
         stub = GrpcHelloWorldService_pb2_grpc.GreeterStub(channel)
         response = stub.SayHello(GrpcHelloWorldService_pb2.HelloRequest(name='xingguo'))
+        again = stub.SayHelloAgain(GrpcHelloWorldService_pb2.HelloRequest(name="xingguo"))
     print("Greeter client received: " + response.message)
+    print("Greeter client received: " + again.message)
 
 
 if __name__ == '__main__':
