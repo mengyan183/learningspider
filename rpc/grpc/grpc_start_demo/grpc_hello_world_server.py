@@ -8,6 +8,7 @@ from concurrent import futures
 
 import grpc
 
+from grpc_start_demo.consul_config import ConsulConfig
 from grpc_start_demo.proto.grpc_python import GrpcHelloWorldService_pb2_grpc
 from grpc_start_demo.proto.python import GrpcHelloWorldService_pb2
 
@@ -43,12 +44,17 @@ class Greeter(GrpcHelloWorldService_pb2_grpc.GreeterServicer):
 def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     GrpcHelloWorldService_pb2_grpc.add_GreeterServicer_to_server(Greeter(), server)
-    server.add_insecure_port('[::]:50051')
+    server.add_insecure_port('127.0.0.1:50051')
+    # 初始化consul配置
+    consul_config = ConsulConfig("127.0.0.1")
+    # 注册server
+    consul_config.register("hello_grpc_server", "127.0.0.1", 50051)
     server.start()
     try:
         while True:
             time.sleep(_ONE_DAY_IN_SECONDS)
     except KeyboardInterrupt:
+        consul_config.unregister("hello_grpc_server", "127.0.0.1", 50051)
         server.stop(0)
 
 
