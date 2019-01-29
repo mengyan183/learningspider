@@ -146,8 +146,8 @@ my_cursor.execute("DROP TABLE IF EXISTS `area`;")
 create_table_sql = '''CREATE TABLE `area` (
     `area_id` int(5) unsigned NOT NULL AUTO_INCREMENT COMMENT '区域id',
     `area_name` varchar(255) NOT NULL DEFAULT '' COMMENT '区域名称',
-    `area_code` int(12) unsigned zerofill NOT NULL DEFAULT '000000000000' COMMENT '区域代码',
-    `parent_code` int(12) unsigned zerofill NOT NULL DEFAULT '000000000000' COMMENT '父级区域代码',
+    `area_code` int(12) unsigned zerofill NOT NULL DEFAULT '0' COMMENT '区域代码',
+    `parent_code` int(12) unsigned zerofill NOT NULL DEFAULT '0' COMMENT '父级区域代码',
     `level` tinyint(1) unsigned zerofill NOT NULL DEFAULT '0' COMMENT '级别(0:全国,1:省级行政区,2:地级行政区,3:县级行政区,4:乡级行政区,5:村级行政区)',
     `use_status` tinyint(1) unsigned zerofill NOT NULL DEFAULT '0' COMMENT '启用禁用状态;0:启用,1:禁用',
     `del_flag` tinyint(1) unsigned zerofill NOT NULL DEFAULT '0' COMMENT '删除状态;0:未删除,1:已删除',
